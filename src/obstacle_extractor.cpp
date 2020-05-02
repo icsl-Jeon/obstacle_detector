@@ -158,6 +158,7 @@ void ObstacleExtractor::pclCallback(const sensor_msgs::PointCloud::ConstPtr pcl_
 void ObstacleExtractor::processPoints() {
   segments_.clear();
   circles_.clear();
+  circles_fit_.clear(); // JBS
 
   groupPoints();  // Grouping points simultaneously detects segments
   mergeSegments();
@@ -169,7 +170,7 @@ void ObstacleExtractor::processPoints() {
 
   input_points_.clear();
 }
-
+// Raw point cluster -> generating segment
 void ObstacleExtractor::groupPoints() {
   static double sin_dp = sin(2.0 * p_distance_proportion_);
 
@@ -268,6 +269,21 @@ void ObstacleExtractor::detectSegments(const PointSet& point_set) {
     segments_.push_back(segment);
   }
 }
+
+//void ObstacleExtractor::detectCirclesJBS(PointSet pointSet) {
+//    if (point_set.num_points < p_min_group_points_)
+//        return;
+//
+//    Circle mec;
+//    int n = pointSet.num_points;
+//
+//
+//
+//
+//    circles_fit_.push_back(Circle);
+//
+//}
+
 
 void ObstacleExtractor::mergeSegments() {
   for (auto i = segments_.begin(); i != segments_.end(); ++i) {

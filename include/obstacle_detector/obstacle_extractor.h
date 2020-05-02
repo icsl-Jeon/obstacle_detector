@@ -74,6 +74,8 @@ private:
   bool checkSegmentsCollinearity(const Segment& segment, const Segment& s1, const Segment& s2);
 
   void detectCircles();
+//  void detectCirclesJBS(PointSet pointSet);
+
   void mergeCircles();
   bool compareCircles(const Circle& c1, const Circle& c2, Circle& merged_circle);
 
@@ -92,6 +94,7 @@ private:
   std::list<Point> input_points_;
   std::list<Segment> segments_;
   std::list<Circle> circles_;
+  std::list<Circle> circles_fit_;
 
   // Parameters
   bool p_active_;

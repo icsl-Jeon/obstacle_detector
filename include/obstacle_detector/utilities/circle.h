@@ -40,8 +40,16 @@
 
 namespace obstacle_detector
 {
+    Point get_circle_center(double bx, double by,
+                        double cx, double cy){
+        double B = bx * bx + by * by;
+        double C = cx * cx + cy * cy;
+        double D = bx * cy - by * cx;
+        return { (cy * B - by * C) / (2 * D),
+                 (bx * C - cx * B) / (2 * D) };
+    }
 
-class Circle
+    class Circle
 {
 public:
   Circle(const Point& p = Point(), const double r = 0.0) : center(p), radius(r) { }
@@ -55,6 +63,20 @@ public:
     center = (s.first_point + s.last_point - radius * s.normal()) / 2.0;
     point_sets = s.point_sets;
   }
+
+  Circle(const Point& p1,const Point& p2){
+      center = { (p1.x + p2.x) / 2.0, (p1.y + p2.y) / 2.0 };
+      radius = (p1 - p2).length()/2;
+  }
+
+    Circle(const Point& p1,const Point& p2,const Point& p3){
+        Point I = get_circle_center(p2.x - p1.x, p2.y - p1.y,
+                                    p3.x - p1.x, p3.y - p1.y);
+        I.x += p1.x;
+        I.y += p1.y;
+        center = I;
+        radius = (I-p1).length();
+    }
 
   double distanceTo(const Point& p) { return (p - center).length() - radius; }
 

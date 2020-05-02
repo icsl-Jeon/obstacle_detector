@@ -182,7 +182,7 @@ Visualization Manager:
       Margin color: 138; 226; 52
       Name: Obstacles
       Opacity: 0.20000000298023224
-      Segments color: 204; 0; 0
+      Segments color: 239; 41; 41
       Segments thickness: 0.10000000149011612
       Topic: /raw_obstacles
       Unreliable: true
@@ -200,10 +200,6 @@ Visualization Manager:
           Value: true
         PX4/odom_local_ned:
           Value: true
-        base_link:
-          Value: true
-        base_link_frd:
-          Value: true
         front_left_custom_body:
           Value: true
         front_left_custom_body/static:
@@ -215,12 +211,6 @@ Visualization Manager:
         map:
           Value: true
         map_enu:
-          Value: true
-        map_ned:
-          Value: true
-        odom:
-          Value: true
-        odom_ned:
           Value: true
         scan_frame:
           Value: true
@@ -234,9 +224,6 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          map_ned:
-            {}
         map_enu:
           scan_frame:
             {}
@@ -255,12 +242,13 @@ Visualization Manager:
               front_left_custom_optical:
                 {}
             world_enu:
-              {}
+              map:
+                {}
       Update Interval: 0
       Value: true
   Enabled: true
   Global Options:
-    Background Color: 0; 0; 0
+    Background Color: 114; 159; 207
     Default Light: true
     Fixed Frame: map
     Frame Rate: 30
@@ -295,7 +283,7 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 15.911049842834473
+      Scale: 25.461891174316406
       Target Frame: CustomizationCharacter_2_enu
       Value: TopDownOrtho (rviz)
       X: -8.027006149291992

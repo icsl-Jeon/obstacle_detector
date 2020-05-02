@@ -22,8 +22,8 @@
     <param name="max_group_distance"   value="0.1"/>
     <param name="distance_proportion"  value="0.1"/>
     <param name="max_split_distance"   value="0.2"/>
-    <param name="max_merge_separation" value="0.2"/>
-    <param name="max_merge_spread"     value="0.4"/>
+    <param name="max_merge_separation" value="2.0"/>
+    <param name="max_merge_spread"     value="2.0"/>
     <param name="max_circle_radius"    value="20"/>
     <param name="radius_enlargement"   value="0.3"/>
 
@@ -39,15 +39,15 @@
   </node>
 
   <node name="obstacle_tracker" pkg="nodelet" type="nodelet" args="load obstacle_detector/ObstacleTracker nodelet_manager">
-    <param name="active"                  value="false"/>
+    <param name="active"                  value="true"/>
 
-    <param name="loop_rate"               value="10.0"/>
-    <param name="tracking_duration"       value="4.0"/>
-    <param name="min_correspondence_cost" value="8.6"/>
+    <param name="loop_rate"               value="50.0"/>
+    <param name="tracking_duration"       value="2.0"/>
+    <param name="min_correspondence_cost" value="2.6"/>
     <param name="std_correspondence_dev"  value="0.15"/>
-    <param name="process_variance"        value="0.1"/>  
-    <param name="process_rate_variance"   value="0.1"/>  
-    <param name="measurement_variance"    value="1.0"/>  
+    <param name="process_variance"        value="0.01"/>
+    <param name="process_rate_variance"   value="0.02"/>
+    <param name="measurement_variance"    value="0.1"/>
 
     <param name="frame_id"                value="scan_frame"/>
 

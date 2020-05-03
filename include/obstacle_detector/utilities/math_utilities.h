@@ -91,6 +91,11 @@ inline Point transformPoint(const Point point, double x, double y, double theta)
   return p;
 }
 
+inline void getTransformedXY(const Point& point, double theta ,double& x, double & y){
+    x = cos(theta)*point.x + sin(theta)*point.y;
+    y = -sin(theta)*point.x + cos(theta)*point.y;
+}
+
 inline Point transformPoint(const Point& point, const tf::StampedTransform& transform) {
   tf::Vector3 v(point.x, point.y, 0);
   v = transform * v;

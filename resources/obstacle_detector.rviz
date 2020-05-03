@@ -192,27 +192,15 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
-        CustomizationCharacter_2_enu:
+        LidarSensor1:
           Value: true
-        CustomizationCharacter_2_ned:
+        PhysXCar:
           Value: true
-        PX4:
-          Value: true
-        PX4/odom_local_ned:
-          Value: true
-        front_left_custom_body:
-          Value: true
-        front_left_custom_body/static:
-          Value: true
-        front_left_custom_optical:
-          Value: true
-        front_left_custom_optical/static:
+        PhysXCar/odom_local_ned:
           Value: true
         map:
           Value: true
-        map_enu:
-          Value: true
-        scan_frame:
+        world_ent:
           Value: true
         world_enu:
           Value: true
@@ -224,26 +212,12 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        map_enu:
-          scan_frame:
-            {}
-          world_ned:
-            PX4:
-              CustomizationCharacter_2_ned:
-                CustomizationCharacter_2_enu:
+        map:
+          world_ent:
+            PhysXCar:
+              PhysXCar/odom_local_ned:
+                LidarSensor1:
                   {}
-              PX4/odom_local_ned:
-                front_left_custom_body/static:
-                  {}
-                front_left_custom_optical/static:
-                  {}
-              front_left_custom_body:
-                {}
-              front_left_custom_optical:
-                {}
-            world_enu:
-              map:
-                {}
       Update Interval: 0
       Value: true
   Enabled: true
@@ -273,21 +247,26 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 8.66003131866455
-      Class: rviz/TopDownOrtho
+      Class: rviz/Orbit
+      Distance: 52.88334655761719
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0
+      Focal Shape Fixed Size: false
+      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 25.461891174316406
-      Target Frame: CustomizationCharacter_2_enu
-      Value: TopDownOrtho (rviz)
-      X: -8.027006149291992
-      Y: -0.077114038169384
+      Pitch: 1.2303980588912964
+      Target Frame: LidarSensor1
+      Value: Orbit (rviz)
+      Yaw: 4.535391330718994
     Saved: ~
 Window Geometry:
   Displays:

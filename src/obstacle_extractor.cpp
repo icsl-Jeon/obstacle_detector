@@ -104,7 +104,11 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
 
   nh_local_.param<string>("frame_id", p_frame_id_, "map");
 
-  if (p_active_ != prev_active) {
+  nh_local_.param<double>("max_box_edge_length",p_max_box_edge,8.0);
+  nh_local_.param<double>("max_box_area",p_max_box_area,30.0);
+
+
+    if (p_active_ != prev_active) {
     if (p_active_) {
       if (p_use_scan_)
         scan_sub_ = nh_.subscribe("scan", 10, &ObstacleExtractor::scanCallback, this);
@@ -159,6 +163,7 @@ void ObstacleExtractor::processPoints() {
   segments_.clear();
   circles_.clear();
   circles_fit_.clear(); // JBS
+    rectangles_.clear(); // JBS
 
   groupPoints();  // Grouping points simultaneously detects segments
   mergeSegments();
@@ -212,6 +217,71 @@ void ObstacleExtractor::groupPoints() {
   }
 
   detectSegments(point_set); // Check the last point set too!
+
+  detectLRect(point_set);
+
+}
+
+void ObstacleExtractor::detectLRect(const PointSet& point_set) {
+
+    if (point_set.num_points < p_min_group_points_)
+        return;
+
+    uint nAngleStep = 10;
+    double angleSeg = M_PI/2/nAngleStep;
+
+    uint nAngleBest = 0;
+    double bestScore = 0;
+    Rectangle bestRect;
+
+    vector<double> C1(point_set.num_points),C2(point_set.num_points); // xy projected set
+
+    for(uint n = 0; n<=nAngleStep; n++){
+        double theta = angleSeg*n;
+        uint pntIdx = 0;
+        double c1min = 1e+6,c1max = -1e-6,c2min = 1e+6,c2max = -1e-6;
+
+        // extract min and max for each axis
+        for (PointIterator point = point_set.begin; point != point_set.end; point++){
+            getTransformedXY(*point,theta,C1[pntIdx],C2[pntIdx]);
+            if (c1min > C1[pntIdx])
+                c1min = C1[pntIdx];
+            if (c1max < C1[pntIdx])
+                c1max = C1[pntIdx];
+            if (c2min > C2[pntIdx])
+                c2min = C2[pntIdx];
+            if (c2max < C2[pntIdx])
+                c2max = C2[pntIdx];
+
+            pntIdx ++ ;
+        }
+
+        // examine criteria
+        double score = 0 ;
+        double deps = 0.1;
+        for (uint m = 0 ; m < point_set.num_points ; m++){
+            double d1 = min(C1[m] - c1min, c1max - C1[m]);
+            double d2 = min(C2[m] - c2min, c2max - C2[m]);
+            score += 1/max(min(d1,d2),deps);
+        }
+        if (score > bestScore){
+
+            double centerX = (c1min + c1max)/2;
+            double centerY = (c2min + c2max)/2;
+
+            bestRect.center.x = cos(theta) * centerX - sin(theta) * centerY;
+            bestRect.center.y = sin(theta) * centerX + cos(theta) * centerY;
+
+            bestRect.l1 = c1max - c1min;
+            bestRect.l2 = c2max - c2min;
+
+            bestRect.theta = theta;
+        }
+    }
+
+    if (max(bestRect.l1,bestRect.l2)<p_max_box_edge and bestRect.getArea() < p_max_box_area )
+        rectangles_.push_back(bestRect);
+
 }
 
 void ObstacleExtractor::detectSegments(const PointSet& point_set) {
@@ -419,8 +489,25 @@ bool ObstacleExtractor::compareCircles(const Circle& c1, const Circle& c2, Circl
 }
 
 void ObstacleExtractor::publishObstacles() {
+
+
+
   obstacle_detector::ObstaclesPtr obstacles_msg(new obstacle_detector::Obstacles);
   obstacles_msg->header.stamp = stamp_;
+
+  // for publishing box
+  visualization_msgs::MarkerArray detectedBoxMsg;
+  visualization_msgs::Marker boxBase;
+  boxBase.header.frame_id = base_frame_id_;
+  boxBase.color.r = 1.0;
+  boxBase.color.g = 0.0;
+  boxBase.color.b = 0.0;
+  boxBase.color.a = 0.4;
+  boxBase.header.stamp = stamp_;
+  boxBase.type = visualization_msgs::Marker::CUBE;
+  boxBase.action = 0;
+
+
 
   if (p_transform_coordinates_) {
     tf::StampedTransform transform;
@@ -475,5 +562,13 @@ void ObstacleExtractor::publishObstacles() {
     }
   }
 
+  // Detected box
+
+
+
   obstacles_pub_.publish(obstacles_msg);
+
+
+
+
 }

@@ -46,6 +46,7 @@
 #include "obstacle_detector/utilities/segment.h"
 #include "obstacle_detector/utilities/circle.h"
 #include "obstacle_detector/utilities/point_set.h"
+#include "obstacle_detector/utilities/rectangle.h"
 
 namespace obstacle_detector
 {
@@ -74,6 +75,7 @@ private:
   bool checkSegmentsCollinearity(const Segment& segment, const Segment& s1, const Segment& s2);
 
   void detectCircles();
+  void detectLRect(const PointSet& point_set); // L shape fitting
 //  void detectCirclesJBS(PointSet pointSet);
 
   void mergeCircles();
@@ -87,6 +89,8 @@ private:
   ros::Publisher obstacles_pub_;
   ros::ServiceServer params_srv_;
 
+  ros::Publisher rect_pub_;
+
   ros::Time stamp_;
   std::string base_frame_id_;
   tf::TransformListener tf_listener_;
@@ -95,6 +99,7 @@ private:
   std::list<Segment> segments_;
   std::list<Circle> circles_;
   std::list<Circle> circles_fit_;
+    std::list<Rectangle> rectangles_;
 
   // Parameters
   bool p_active_;
@@ -120,6 +125,12 @@ private:
   double p_max_x_limit_;
   double p_min_y_limit_;
   double p_max_y_limit_;
+
+
+  // JBS
+  double p_max_box_edge;
+  double p_max_box_area;
+
 
   std::string p_frame_id_;
 };

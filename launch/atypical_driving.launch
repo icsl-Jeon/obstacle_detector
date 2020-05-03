@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <arg name="bag_path" value="/home/jbs/Documents/AirSimLog/AutoDrive/autoDriveHD.bag"/>
+
+  <param name="use_sim_time" value="true"/>
+
+  <node name="play_forest" pkg="rosbag" type="play" output="screen" args="--clock --loop  $(arg bag_path)"/>
+
+  <!--    <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find auto_chaser2)/rviz/obstacle.rviz"/>-->
+
+  <!-- run pointcloud_to_laserscan node -->
+  <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan">
+
+    <remap from="cloud_in" to="/airsim_car_node/PhysXCar/lidar/LidarSensor1"/>
+    <!--        <remap from="cloud_in" to="/octomap_point_cloud_centers"/>-->
+
+    <remap from="scan" to="/scan"/>
+    <rosparam>
+      target_frame:  LidarSensor1  # Leave disabled to output scan in pointcloud frame
+      transform_tolerance: 0.01
+      min_height: -0.1
+      max_height: 0.1
+
+      angle_min: -3.1408 # -M_PI/2
+      angle_max: 3.1408 # M_PI/2
+      angle_increment: 0.0087 # M_PI/360.0
+      scan_time: 0.3333
+      range_min: 0.45
+      range_max: 40.0
+      use_inf: true
+      inf_epsilon: 1.0
+
+      # Concurrency level, affects number of pointclouds queued for processing and number of threads used
+      # 0 : Detect number of cores
+      # 1 : Single threaded
+      # 2->inf : Parallelism level
+      concurrency_level: 1
+    </rosparam>
+
+  </node>
+
+  <node pkg="rviz" type="rviz" name="rviz_atypical" args="-d $(find obstacle_detector)/resources/obstacle_detector.rviz"/>
+
+  <node name="nodelet_manager" pkg="nodelet" type="nodelet" args="manager" output="screen">
+    <param name="num_worker_threads" value="20"/>
+  </node>
+  <!-- run obstacle detector node -->
+  <node name="obstacle_extractor" pkg="nodelet" type="nodelet" args="load obstacle_detector/ObstacleExtractor nodelet_manager" output="screen">
+    <param name="active"               value="true"/>
+    <param name="use_scan"             value="true"/>
+    <param name="use_pcl"              value="false"/>
+
+    <param name="use_split_and_merge"    value="false"/>
+    <param name="circles_from_visibles"  value="false"/>
+    <param name="discard_converted_segments" value="false"/>
+    <param name="transform_coordinates"  value="true"/>
+
+    <param name="min_group_points"     value="5"/>
+
+    <param name="max_group_distance"   value="0.5"/>
+    <param name="distance_proportion"  value="0.1"/>
+    <param name="max_split_distance"   value="0.2"/>
+    <param name="max_merge_separation" value="2.0"/>
+    <param name="max_merge_spread"     value="2.0"/>
+    <param name="max_circle_radius"    value="20"/>
+    <param name="radius_enlargement"   value="0.3"/>
+
+    <param name="min_x_limit"   value="-40"/>
+    <param name="max_x_limit"   value="40"/>
+    <param name="min_y_limit"   value="-40"/>
+    <param name="max_y_limit"   value="40"/>
+
+
+
+
+    <param name="frame_id"             value="LidarSensor1"/>
+  </node>
+
+  <node name="obstacle_tracker" pkg="nodelet" type="nodelet" args="load obstacle_detector/ObstacleTracker nodelet_manager" output="screen">
+    <param name="active"                  value="true"/>
+
+    <param name="loop_rate"               value="50.0"/>
+    <param name="tracking_duration"       value="2.0"/>
+    <param name="min_correspondence_cost" value="2.6"/>
+    <param name="std_correspondence_dev"  value="0.15"/>
+    <param name="process_variance"        value="0.01"/>
+    <param name="process_rate_variance"   value="0.02"/>
+    <param name="measurement_variance"    value="0.1"/>
+
+    <param name="frame_id"                value="LidarSensor1"/>
+
+    <remap from="tracked_obstacles" to="obstacles"/>
+  </node>
+
+
+
+
+</launch>

@@ -90,6 +90,9 @@ private:
   QLineEdit* radius_enl_input_;
   QLineEdit* frame_id_input_;
 
+  QLineEdit* box_edge_input_;
+  QLineEdit* box_area_input_;
+
   ros::NodeHandle nh_;
   ros::NodeHandle nh_local_;
 
@@ -115,6 +118,9 @@ private:
   double p_max_merge_spread_;
   double p_max_circle_radius_;
   double p_radius_enlargement_;
+
+  double p_max_box_edge;
+  double p_max_box_area;
 
   std::string p_frame_id_;
 };

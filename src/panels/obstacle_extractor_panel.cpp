@@ -60,6 +60,9 @@ ObstacleExtractorPanel::ObstacleExtractorPanel(QWidget* parent) : rviz::Panel(pa
   radius_enl_input_ = new QLineEdit();
   frame_id_input_ = new QLineEdit();
 
+  box_edge_input_ = new QLineEdit();
+  box_area_input_ = new QLineEdit();
+
   min_n_input_->setAlignment(Qt::AlignRight);
   dist_prop_input_->setAlignment(Qt::AlignRight);
   group_dist_input_->setAlignment(Qt::AlignRight);
@@ -70,7 +73,10 @@ ObstacleExtractorPanel::ObstacleExtractorPanel(QWidget* parent) : rviz::Panel(pa
   radius_enl_input_->setAlignment(Qt::AlignRight);
   frame_id_input_->setAlignment(Qt::AlignRight);
 
-  QFrame* lines[5];
+  box_edge_input_->setAlignment(Qt::AlignRight);
+  box_area_input_->setAlignment(Qt::AlignRight);
+
+    QFrame* lines[5];
   for (auto& line : lines) {
     line = new QFrame();
     line->setFrameShape(QFrame::HLine);
@@ -109,7 +115,17 @@ ObstacleExtractorPanel::ObstacleExtractorPanel(QWidget* parent) : rviz::Panel(pa
   segmentation_layout->addWidget(merge_spread_input_, 2, 4);
   segmentation_layout->addWidget(new QLabel("m"), 2, 5, Qt::AlignLeft);
 
-  segmentation_layout->addWidget(use_split_merge_checkbox_, 3, 0, 1, 6, Qt::AlignCenter);
+    segmentation_layout->addWidget(new QLabel("l<sub>max</sub>:"), 3, 0, Qt::AlignRight);
+    segmentation_layout->addWidget(box_edge_input_, 3, 1);
+    segmentation_layout->addWidget(new QLabel("m  "), 3, 2, Qt::AlignLeft);
+    segmentation_layout->addWidget(new QLabel("A<sub>max</sub>:"), 2, 3, Qt::AlignRight);
+    segmentation_layout->addWidget(box_area_input_, 3, 4);
+    segmentation_layout->addWidget(new QLabel("m"), 3, 5, Qt::AlignLeft);
+
+
+
+
+    segmentation_layout->addWidget(use_split_merge_checkbox_, 3, 0, 1, 6, Qt::AlignCenter);
   segmentation_box->setLayout(segmentation_layout);
 
   QGroupBox* circle_box = new QGroupBox("Circularization:");
@@ -166,7 +182,11 @@ ObstacleExtractorPanel::ObstacleExtractorPanel(QWidget* parent) : rviz::Panel(pa
   connect(split_dist_input_, SIGNAL(editingFinished()), this, SLOT(processInputs()));
   connect(merge_sep_input_, SIGNAL(editingFinished()), this, SLOT(processInputs()));
   connect(merge_spread_input_, SIGNAL(editingFinished()), this, SLOT(processInputs()));
-  connect(max_radius_input_, SIGNAL(editingFinished()), this, SLOT(processInputs()));
+
+    connect(box_edge_input_, SIGNAL(editingFinished()), this, SLOT(processInputs()));
+    connect(box_area_input_, SIGNAL(editingFinished()), this, SLOT(processInputs()));
+
+    connect(max_radius_input_, SIGNAL(editingFinished()), this, SLOT(processInputs()));
   connect(radius_enl_input_, SIGNAL(editingFinished()), this, SLOT(processInputs()));
   connect(frame_id_input_, SIGNAL(editingFinished()), this, SLOT(processInputs()));
 
@@ -204,6 +224,13 @@ void ObstacleExtractorPanel::verifyInputs() {
 
   try { p_max_merge_separation_ = boost::lexical_cast<double>(merge_sep_input_->text().toStdString()); }
   catch(boost::bad_lexical_cast &) { p_max_merge_separation_ = 0.0; merge_sep_input_->setText("0.0"); }
+
+    try { p_max_box_area = boost::lexical_cast<double>(box_area_input_->text().toStdString()); }
+    catch(boost::bad_lexical_cast &) { p_max_box_area = 0.0; box_area_input_->setText("0.0"); }
+
+    try { p_max_box_edge = boost::lexical_cast<double>(box_edge_input_->text().toStdString()); }
+    catch(boost::bad_lexical_cast &) { p_max_box_edge = 0.0; box_edge_input_->setText("0.0"); }
+
 
   try { p_max_merge_spread_ = boost::lexical_cast<double>(merge_spread_input_->text().toStdString()); }
   catch(boost::bad_lexical_cast &) { p_max_merge_spread_ = 0.0; merge_spread_input_->setText("0.0"); }
@@ -261,7 +288,11 @@ void ObstacleExtractorPanel::getParams() {
   p_max_circle_radius_ = nh_local_.param("max_circle_radius", 0.0);
   p_radius_enlargement_ = nh_local_.param("radius_enlargement", 0.0);
 
-  p_frame_id_ = nh_local_.param("frame_id", std::string(""));
+  p_max_box_edge = nh_local_.param("max_box_edge_length",8.0);
+  p_max_box_area = nh_local_.param("max_box_area",30.0);
+
+
+    p_frame_id_ = nh_local_.param("frame_id", std::string(""));
 }
 
 void ObstacleExtractorPanel::evaluateParams() {
@@ -299,6 +330,13 @@ void ObstacleExtractorPanel::evaluateParams() {
 
   merge_sep_input_->setEnabled(p_active_);
   merge_sep_input_->setText(QString::number(p_max_merge_separation_));
+
+
+  box_edge_input_->setEnabled(p_active_);
+  box_edge_input_->setText(QString::number(p_max_box_edge));
+
+  box_area_input_->setEnabled(p_active_);
+  box_area_input_->setText(QString::number(p_max_box_area));
 
   merge_spread_input_->setEnabled(p_active_);
   merge_spread_input_->setText(QString::number(p_max_merge_spread_));

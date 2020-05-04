@@ -118,14 +118,14 @@ ObstacleExtractorPanel::ObstacleExtractorPanel(QWidget* parent) : rviz::Panel(pa
     segmentation_layout->addWidget(new QLabel("l<sub>max</sub>:"), 3, 0, Qt::AlignRight);
     segmentation_layout->addWidget(box_edge_input_, 3, 1);
     segmentation_layout->addWidget(new QLabel("m  "), 3, 2, Qt::AlignLeft);
-    segmentation_layout->addWidget(new QLabel("A<sub>max</sub>:"), 2, 3, Qt::AlignRight);
+    segmentation_layout->addWidget(new QLabel("A<sub>max</sub>:"), 3, 3, Qt::AlignRight);
     segmentation_layout->addWidget(box_area_input_, 3, 4);
     segmentation_layout->addWidget(new QLabel("m"), 3, 5, Qt::AlignLeft);
 
 
 
 
-    segmentation_layout->addWidget(use_split_merge_checkbox_, 3, 0, 1, 6, Qt::AlignCenter);
+    segmentation_layout->addWidget(use_split_merge_checkbox_, 4, 0, 1, 6, Qt::AlignCenter);
   segmentation_box->setLayout(segmentation_layout);
 
   QGroupBox* circle_box = new QGroupBox("Circularization:");

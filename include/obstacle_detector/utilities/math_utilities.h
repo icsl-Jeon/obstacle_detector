@@ -38,6 +38,7 @@
 #include <tf/transform_listener.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Point32.h>
+#include <cmath>
 
 #include "obstacle_detector/utilities/point.h"
 
@@ -47,9 +48,14 @@ namespace obstacle_detector
 inline double signum(double x) { return (x < 0.0) ? -1.0 : 1.0; }
 inline double abs(double x) { return (x < 0.0) ? -x : x; }
 inline double max(double x, double y) { return (x > y) ? x : y; }
+inline double min(double x, double y) { return (x < y) ? x : y; }
 
 inline double length(const geometry_msgs::Point& point) {
   return sqrt(point.x * point.x + point.y * point.y);
+}
+
+inline double length(const Point& point) {
+        return sqrt(point.x * point.x + point.y * point.y);
 }
 
 inline double squaredLength(const geometry_msgs::Point& point) {
@@ -63,6 +69,7 @@ inline double length(const geometry_msgs::Vector3& vec) {
 inline double squaredLength(const geometry_msgs::Vector3& vec) {
   return vec.x * vec.x + vec.y * vec.y;
 }
+
 
 inline geometry_msgs::Point transformPoint(const geometry_msgs::Point& point, double x, double y, double theta) {
   geometry_msgs::Point p;

@@ -37,6 +37,7 @@
 
 #include "obstacle_detector/utilities/point.h"
 #include "obstacle_detector/utilities/segment.h"
+#include "obstacle_detector/utilities/math_utilities.h"
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
@@ -50,7 +51,7 @@ public:
         double l1,l2; // width and height
 
         double getArea() {return l1*l2;};
-        void loadMarkerPoseScale(visualization_msgs::Marker marker){
+        void loadMarkerPoseScale(visualization_msgs::Marker& marker) const{
 
             marker.pose.position.x = center.x;
             marker.pose.position.y = center.y;
@@ -71,7 +72,64 @@ public:
 
         }
 
+        std::vector<Point> getCorners() const{
+
+            std::vector<Point> corners;
+            corners.push_back(center +  transformPoint(Point(l1/2,l2/2),0,0,theta));
+            corners.push_back(center +  transformPoint(Point(l1/2,-l2/2),0,0,theta));
+            corners.push_back(center +  transformPoint(Point(-l1/2,l2/2),0,0,theta));
+            corners.push_back(center +  transformPoint(Point(-l1/2,-l2/2),0,0,theta));
+            return corners;
+        }
+
+
+
+        double distTo(const Rectangle& rect){
+            double minDistVertex = 1e+6;
+
+            std::vector<Point> corners = getCorners();
+            std::vector<Point> corners2 = rect.getCorners();
+
+            for (auto i = corners.begin() ; i < corners.end();i++)
+                for (auto j = corners2.begin() ; j < corners2.end();j++)
+                    if (minDistVertex > (*i-*j).length())
+                        minDistVertex = (*i-*j).length();
+
+            return minDistVertex;
+        }
+
 
     };
 
+    Rectangle sum(const Rectangle& rect1,const Rectangle& rect2){
+        double thetaNew = (rect1.theta + rect2.theta)/2;
+        std::vector<Point> corner1 = rect1.getCorners();
+        std::vector<Point> corner2 = rect2.getCorners();
+
+        // projection to the new theta cooridnate
+        for (Point& it : corner1 )
+            it = transformPoint(it,0,0,-thetaNew);
+        for (Point& it : corner2 )
+            it = transformPoint(it,0,0,-thetaNew);
+
+        double xmax = -1e+6,ymax = -1e+6,xmin = 1e+6,ymin = 1e+6;
+
+        for (uint i = 0 ; i < 4 ; i++){
+            if (max(corner1[i].x , corner2[i].x ) > xmax)
+                xmax = max(corner1[i].x , corner2[i].x );
+            if (min(corner1[i].x , corner2[i].x ) < xmin)
+                xmin = min(corner1[i].x , corner2[i].x );
+            if (max(corner1[i].y , corner2[i].y ) > ymax)
+                ymax = max(corner1[i].y , corner2[i].y );
+            if (min(corner1[i].y , corner2[i].y ) < ymin)
+                ymin = min(corner1[i].y , corner2[i].y );
+        }
+
+        Rectangle newRect;
+        newRect.theta = thetaNew;
+        newRect.l1 = xmax - xmin;
+        newRect.l2 = ymax - ymin;
+        newRect.center = transformPoint(Point((xmax+xmin)/2,(ymax+ymin)/2),0,0,thetaNew);
+        return newRect;
+    }
 } // namespace obstacle_detector

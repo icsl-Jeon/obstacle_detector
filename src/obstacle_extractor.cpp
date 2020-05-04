@@ -106,6 +106,10 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
 
   nh_local_.param<double>("max_box_edge_length",p_max_box_edge,8.0);
   nh_local_.param<double>("max_box_area",p_max_box_area,30.0);
+  nh_local_.param<double>("min_box_area",p_min_box_area,3.0);
+  nh_local_.param<double>("max_box_edge_ratio",p_max_box_wh_ratio,10.0);
+  nh_local_.param<double>("max_merge_theta",p_max_merge_theta_diff,M_PI/20);
+  nh_local_.param<double>("max_merge_rect_dist",p_max_merge_rect_dist,0.3);
 
 
     if (p_active_ != prev_active) {
@@ -116,6 +120,7 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
         pcl_sub_ = nh_.subscribe("pcl", 10, &ObstacleExtractor::pclCallback, this);
 
       obstacles_pub_ = nh_.advertise<obstacle_detector::Obstacles>("raw_obstacles", 10);
+      rect_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("lshape_boxes",10);
     }
     else {
       // Send empty message
@@ -167,9 +172,12 @@ void ObstacleExtractor::processPoints() {
 
   groupPoints();  // Grouping points simultaneously detects segments
   mergeSegments();
+  mergeRects(); //
 
-  detectCircles();
-  mergeCircles();
+//  cout << "---------------" << endl;
+
+//  detectCircles();
+//  mergeCircles();
 
   publishObstacles();
 
@@ -207,6 +215,7 @@ void ObstacleExtractor::groupPoints() {
         point_set.is_visible = false;
 
       detectSegments(point_set);
+      detectLRect(point_set);
 
       // Begin new point set
       point_set.begin = point;
@@ -216,8 +225,7 @@ void ObstacleExtractor::groupPoints() {
     }
   }
 
-  detectSegments(point_set); // Check the last point set too!
-
+  detectSegments(point_set); // Check the last point set too
   detectLRect(point_set);
 
 }
@@ -236,10 +244,10 @@ void ObstacleExtractor::detectLRect(const PointSet& point_set) {
 
     vector<double> C1(point_set.num_points),C2(point_set.num_points); // xy projected set
 
-    for(uint n = 0; n<=nAngleStep; n++){
+    for(uint n = 0; n<nAngleStep; n++){
         double theta = angleSeg*n;
         uint pntIdx = 0;
-        double c1min = 1e+6,c1max = -1e-6,c2min = 1e+6,c2max = -1e-6;
+        double c1min = 1e+6,c1max = -1e+6,c2min = 1e+6,c2max = -1e+6;
 
         // extract min and max for each axis
         for (PointIterator point = point_set.begin; point != point_set.end; ++point){
@@ -261,12 +269,15 @@ void ObstacleExtractor::detectLRect(const PointSet& point_set) {
 
         // examine criteria
         double score = 0 ;
-        double deps = 0.1;
+        double deps = 0.3;
         for (uint m = 0 ; m < point_set.num_points ; m++){
             double d1 = min(C1[m] - c1min, c1max - C1[m]);
             double d2 = min(C2[m] - c2min, c2max - C2[m]);
             score += 1/max(min(d1,d2),deps);
         }
+//        cout << score << ", ";
+
+
         if (score > bestScore){
 
             double centerX = (c1min + c1max)/2;
@@ -279,13 +290,19 @@ void ObstacleExtractor::detectLRect(const PointSet& point_set) {
             bestRect.l2 = c2max - c2min;
 
             bestRect.theta = theta;
+
+            bestScore = score;
         }
     }
-
-    if (max(bestRect.l1,bestRect.l2)<p_max_box_edge and bestRect.getArea() < p_max_box_area )
+//    cout << "best: " << bestScore << " with theta "<<bestRect.theta<< endl;
+    if (max(bestRect.l1,bestRect.l2)<p_max_box_edge and bestRect.getArea() < p_max_box_area and
+            bestRect.getArea() > p_min_box_area and
+            max(bestRect.l1,bestRect.l2)/min(bestRect.l1,bestRect.l2) < p_max_box_wh_ratio )
         rectangles_.push_back(bestRect);
 
 }
+
+
 
 void ObstacleExtractor::detectSegments(const PointSet& point_set) {
   if (point_set.num_points < p_min_group_points_)
@@ -373,6 +390,38 @@ void ObstacleExtractor::mergeSegments() {
     }
   }
 }
+
+void ObstacleExtractor::mergeRects() {
+    uint n = 0;
+//    for (auto i = rectangles_.begin() ; i != rectangles_.end() ; ++i,n++)
+//                printf("detected rect [%f,%f] (%d / %d) \n",
+//                        i->center.x,i->center.y,n,rectangles_.size());
+    if (rectangles_.size() > 1)
+      for (auto i = rectangles_.begin() ; i != rectangles_.end() ; ++i)
+        for(auto j = i ; j != rectangles_.end() ; ++j){
+            Rectangle mergedRect;
+
+            if (i!=j) {
+
+                double angleDiff = abs(i->theta - j->theta);
+                double minVertDist = i->distTo(*j);
+//                printf("dist btw [%f,%f] and [%f,%f] =  %f\n",
+//                        i->center.x,i->center.y,j->center.x,j->center.y,minVertDist);
+
+                if ((angleDiff < p_max_merge_theta_diff or (M_PI / 2 - angleDiff) < p_max_merge_theta_diff) and
+                    minVertDist < p_max_merge_rect_dist) {
+                    mergedRect = sum(*i, *j);
+                    auto temp_itr = rectangles_.insert(i, mergedRect);
+                    rectangles_.erase(i);
+                    rectangles_.erase(j);
+                    i = --temp_itr;
+                    break;
+                }
+            }
+        }
+
+}
+
 
 bool ObstacleExtractor::compareSegments(const Segment& s1, const Segment& s2, Segment& merged_segment) {
   if (&s1 == &s2)
@@ -508,9 +557,11 @@ void ObstacleExtractor::publishObstacles() {
   boxBase.color.a = 0.4;
   boxBase.header.stamp = stamp_;
   boxBase.type = visualization_msgs::Marker::CUBE;
-  boxBase.action = 0;
 
-
+  boxBase.action = 3;
+  boxBase.id = 0;
+  boxBase.ns = "LRects";
+  detectedBoxMsg.markers.push_back(boxBase);
 
   if (p_transform_coordinates_) {
     tf::StampedTransform transform;
@@ -566,11 +617,21 @@ void ObstacleExtractor::publishObstacles() {
   }
 
   // Detected box
+  printf ("number of rects = %d \n",rectangles_.size());
+  for (const Rectangle& c: rectangles_){
+    if (c.center.x > p_min_x_limit_ && c.center.x < p_max_x_limit_ &&
+        c.center.y > p_min_y_limit_ && c.center.y < p_max_y_limit_){
+        c.loadMarkerPoseScale(boxBase);
+        boxBase.action = 0;
+        boxBase.id ++;
+        boxBase.header.stamp = ros::Time::now();
+        detectedBoxMsg.markers.push_back(boxBase);
 
-
+    }
+  }
 
   obstacles_pub_.publish(obstacles_msg);
-
+  rect_pub_.publish(detectedBoxMsg);
 
 
 

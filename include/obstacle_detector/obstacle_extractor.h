@@ -70,7 +70,10 @@ private:
 
   void detectSegments(const PointSet& point_set);
   void mergeSegments();
+  void mergeRects();
+
   bool compareSegments(const Segment& s1, const Segment& s2, Segment& merged_segment);
+
   bool checkSegmentsProximity(const Segment& s1, const Segment& s2);
   bool checkSegmentsCollinearity(const Segment& segment, const Segment& s1, const Segment& s2);
 
@@ -79,6 +82,8 @@ private:
 //  void detectCirclesJBS(PointSet pointSet);
 
   void mergeCircles();
+
+
   bool compareCircles(const Circle& c1, const Circle& c2, Circle& merged_circle);
 
   ros::NodeHandle nh_;
@@ -130,6 +135,10 @@ private:
   // JBS
   double p_max_box_edge;
   double p_max_box_area;
+  double p_min_box_area;
+  double p_max_box_wh_ratio;
+  double p_max_merge_theta_diff;
+  double p_max_merge_rect_dist;
 
 
   std::string p_frame_id_;

@@ -242,18 +242,21 @@ void ObstacleExtractor::detectLRect(const PointSet& point_set) {
         double c1min = 1e+6,c1max = -1e-6,c2min = 1e+6,c2max = -1e-6;
 
         // extract min and max for each axis
-        for (PointIterator point = point_set.begin; point != point_set.end; point++){
-            getTransformedXY(*point,theta,C1[pntIdx],C2[pntIdx]);
-            if (c1min > C1[pntIdx])
-                c1min = C1[pntIdx];
-            if (c1max < C1[pntIdx])
-                c1max = C1[pntIdx];
-            if (c2min > C2[pntIdx])
-                c2min = C2[pntIdx];
-            if (c2max < C2[pntIdx])
-                c2max = C2[pntIdx];
+        for (PointIterator point = point_set.begin; point != point_set.end; ++point){
+            if (pntIdx < point_set.num_points) {
+                getTransformedXY(*point, theta, C1[pntIdx], C2[pntIdx]);
 
-            pntIdx ++ ;
+                if (c1min > C1[pntIdx])
+                    c1min = C1[pntIdx];
+                if (c1max < C1[pntIdx])
+                    c1max = C1[pntIdx];
+                if (c2min > C2[pntIdx])
+                    c2min = C2[pntIdx];
+                if (c2max < C2[pntIdx])
+                    c2max = C2[pntIdx];
+
+                pntIdx++;
+            }
         }
 
         // examine criteria

@@ -621,18 +621,29 @@ void ObstacleExtractor::publishObstacles() {
   for (const Rectangle& c: rectangles_){
     if (c.center.x > p_min_x_limit_ && c.center.x < p_max_x_limit_ &&
         c.center.y > p_min_y_limit_ && c.center.y < p_max_y_limit_){
+        // Rectangle box marker
         c.loadMarkerPoseScale(boxBase);
         boxBase.action = 0;
         boxBase.id ++;
         boxBase.header.stamp = ros::Time::now();
         detectedBoxMsg.markers.push_back(boxBase);
 
+        // Fill obstacle message
+        RectangleObstacle rect;
+        rect.center.x = c.center.x;
+        rect.center.y = c.center.y;
+        rect.velocity.x = 0.0;
+        rect.velocity.y = 0.0;
+        rect.theta = c.theta;
+        rect.l1 = c.l1;
+        rect.l2 = c.l2;
+
+        obstacles_msg->rects.push_back(rect);
     }
   }
 
   obstacles_pub_.publish(obstacles_msg);
   rect_pub_.publish(detectedBoxMsg);
-
 
 
 }

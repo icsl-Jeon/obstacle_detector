@@ -5,7 +5,7 @@
 
   <param name="use_sim_time" value="true"/>
 
-  <node name="play_forest" pkg="rosbag" type="play" output="screen" args="--clock --loop  $(arg bag_path)"/>
+  <node name="play_forest" pkg="rosbag" type="play" args="--clock --loop  $(arg bag_path)"/>
 
   <!--    <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find auto_chaser2)/rviz/obstacle.rviz"/>-->
 
@@ -66,19 +66,20 @@
     <param name="max_circle_radius"    value="20"/>
     <param name="radius_enlargement"   value="0.3"/>
 
-    <param name="min_x_limit"   value="-40"/>
-    <param name="max_x_limit"   value="40"/>
-    <param name="min_y_limit"   value="-40"/>
-    <param name="max_y_limit"   value="40"/>
+    <param name="min_x_limit"   value="-2000"/>
+    <param name="max_x_limit"   value="2000"/>
+    <param name="min_y_limit"   value="-2000"/>
+    <param name="max_y_limit"   value="2000"/>
 
 
 
 
-    <param name="frame_id"             value="LidarSensor1"/>
+    <param name="frame_id"             value="map"/>
   </node>
 
   <node name="obstacle_tracker" pkg="nodelet" type="nodelet" args="load obstacle_detector/ObstacleTracker nodelet_manager" output="screen">
     <param name="active"                  value="true"/>
+    <param name="circle_mode"                  value="false"/>
 
     <param name="loop_rate"               value="50.0"/>
     <param name="tracking_duration"       value="2.0"/>
@@ -88,7 +89,7 @@
     <param name="process_rate_variance"   value="0.02"/>
     <param name="measurement_variance"    value="0.1"/>
 
-    <param name="frame_id"                value="LidarSensor1"/>
+    <param name="frame_id"                value="map"/>
 
     <remap from="tracked_obstacles" to="obstacles"/>
   </node>

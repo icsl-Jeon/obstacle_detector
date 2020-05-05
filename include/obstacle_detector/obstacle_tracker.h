@@ -43,6 +43,7 @@
 #include <obstacle_detector/Obstacles.h>
 
 #include "obstacle_detector/utilities/tracked_obstacle.h"
+#include "obstacle_detector/utilities/tracked_obstacle_rect.h"
 #include "obstacle_detector/utilities/math_utilities.h"
 
 namespace obstacle_detector
@@ -62,6 +63,10 @@ private:
 
   double obstacleCostFunction(const CircleObstacle& new_obstacle, const CircleObstacle& old_obstacle);
   void calculateCostMatrix(const std::vector<CircleObstacle>& new_obstacles, arma::mat& cost_matrix);
+
+    double obstacleCostFunction(const RectangleObstacle & new_obstacle, const RectangleObstacle& old_obstacle);
+    void calculateCostMatrix(const std::vector<RectangleObstacle>& new_obstacles, arma::mat& cost_matrix);
+
   void calculateRowMinIndices(const arma::mat& cost_matrix, std::vector<int>& row_min_indices);
   void calculateColMinIndices(const arma::mat& cost_matrix, std::vector<int>& col_min_indices);
 
@@ -75,6 +80,11 @@ private:
   void fissureObstacle(const std::vector<int>& fission_indices, const std::vector<int>& row_min_indices,
                        std::vector<TrackedObstacle>& new_tracked, const Obstacles::ConstPtr& new_obstacles);
 
+    void fuseObstacles(const std::vector<int>& fusion_indices, const std::vector<int>& col_min_indices,
+                       std::vector<TrackedObstacleRect>& new_tracked, const Obstacles::ConstPtr& new_obstacles);
+    void fissureObstacle(const std::vector<int>& fission_indices, const std::vector<int>& row_min_indices,
+                         std::vector<TrackedObstacleRect>& new_tracked, const Obstacles::ConstPtr& new_obstacles);
+
   void updateObstacles();
   void publishObstacles();
 
@@ -83,6 +93,9 @@ private:
 
   ros::Subscriber obstacles_sub_;
   ros::Publisher obstacles_pub_;
+
+  ros::Publisher rects_pub_;  // if circle mode is false, then this will be published
+
   ros::ServiceServer params_srv_;
   ros::Timer timer_;
 
@@ -92,7 +105,10 @@ private:
   std::vector<TrackedObstacle> tracked_obstacles_;
   std::vector<CircleObstacle> untracked_obstacles_;
 
-  // Parameters
+    std::vector<TrackedObstacleRect> tracked_obstacles_rect_;
+    std::vector<RectangleObstacle> untracked_obstacles_rect_;
+
+    // Parameters
   bool p_active_;
   bool p_copy_segments_;
 
@@ -106,6 +122,7 @@ private:
   double p_process_rate_variance_;
   double p_measurement_variance_;
 
+  bool p_is_circle; // circle = ture / rect = false
 
   std::string p_frame_id_;
 };

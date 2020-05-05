@@ -176,8 +176,8 @@ void ObstacleExtractor::processPoints() {
 
 //  cout << "---------------" << endl;
 
-//  detectCircles();
-//  mergeCircles();
+  detectCircles();
+  mergeCircles();
 
   publishObstacles();
 
@@ -617,7 +617,7 @@ void ObstacleExtractor::publishObstacles() {
   }
 
   // Detected box
-  printf ("number of rects = %d \n",rectangles_.size());
+//  printf ("number of rects = %d \n",rectangles_.size());
   for (const Rectangle& c: rectangles_){
     if (c.center.x > p_min_x_limit_ && c.center.x < p_max_x_limit_ &&
         c.center.y > p_min_y_limit_ && c.center.y < p_max_y_limit_){

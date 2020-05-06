@@ -584,6 +584,11 @@ void ObstacleExtractor::publishObstacles() {
       c.center = transformPoint(c.center, transform);
 
     obstacles_msg->header.frame_id = p_frame_id_;
+
+    for (Rectangle& r : rectangles_)
+        r = r.transform(transform);
+    boxBase.header.frame_id = p_frame_id_;
+
   }
   else
     obstacles_msg->header.frame_id = base_frame_id_;

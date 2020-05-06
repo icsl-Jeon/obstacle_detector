@@ -97,7 +97,49 @@ public:
 
             return minDistVertex;
         }
+        /**
+         * current frame {2} / see the rect in frame {1}
+         * @param transform_ = R12
+         * @return
+         */
+        Rectangle transform(tf::StampedTransform transform_) {
 
+            Rectangle newRect;
+            tf::Vector3 v(center.x,center.y,0);
+            v = transform_*v;
+            newRect.center.x = v.x();
+            newRect.center.y = v.y();
+
+            std::vector<Point> curPnts = getCorners();
+            Point curL1 = curPnts[0] - curPnts[2];
+            Point curL2 = curPnts[0] - curPnts[1];
+            tf::Vector3 zero(0,0,0);
+            transform_.setOrigin(zero);
+
+            Point newL1 = transformPoint(curL1,transform_);
+            double th1 = atan2(newL1.y,newL1.x);
+
+
+            Point newL2 = transformPoint(curL2,transform_);
+            double th2 = atan2(newL2.y,newL2.x);
+
+            if (th1 < 0 )
+                th1 = M_PI + th1;
+            if (th2 < 0 )
+                th2 = M_PI + th2;
+
+            if (th1 > M_PI/2) {
+                newRect.theta = th2;
+                newRect.l1 = l2;
+                newRect.l2 = l1;
+            }else{
+                newRect.theta = th1;
+                newRect.l1 = l1;
+                newRect.l2 = l2;
+            }
+
+            return newRect;
+        }
 
     };
 
@@ -132,4 +174,5 @@ public:
         newRect.center = transformPoint(Point((xmax+xmin)/2,(ymax+ymin)/2),0,0,thetaNew);
         return newRect;
     }
+
 } // namespace obstacle_detector

@@ -337,7 +337,7 @@ double ObstacleTracker::obstacleCostFunction(const CircleObstacle& new_obstacle,
 double ObstacleTracker::obstacleCostFunction(const RectangleObstacle &new_obstacle,
                                              const RectangleObstacle &old_obstacle) {
 
-    double cost = pow(new_obstacle.center.x - old_obstacle.center.x,2) + pow(new_obstacle.center.y - old_obstacle.center.y,2) +
+    double cost = 3*(pow(new_obstacle.center.x - old_obstacle.center.x,2) + pow(new_obstacle.center.y - old_obstacle.center.y,2)) +
                     pow(new_obstacle.theta - old_obstacle.theta,2)+
                     pow(new_obstacle.l1 - old_obstacle.l1,2) + pow(new_obstacle.l2 - old_obstacle.l2,2);
     printf("Computed cost: %f\n",cost);
@@ -628,7 +628,7 @@ void ObstacleTracker::publishObstacles() {
           obstacles_.rects.push_back(ob);
           Rectangle rect;
           rect.center.x = ob.center.x;
-          rect.center.y = ob.center.x;
+          rect.center.y = ob.center.y;
           rect.theta = ob.theta;
           rect.l1 = ob.l1;
           rect.l2 = ob.l2;

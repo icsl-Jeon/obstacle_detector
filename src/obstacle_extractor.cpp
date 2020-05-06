@@ -171,7 +171,7 @@ void ObstacleExtractor::processPoints() {
     rectangles_.clear(); // JBS
 
   groupPoints();  // Grouping points simultaneously detects segments
-  mergeSegments();
+  //mergeSegments();
   mergeRects(); //
 
 //  cout << "---------------" << endl;
@@ -551,8 +551,8 @@ void ObstacleExtractor::publishObstacles() {
   visualization_msgs::MarkerArray detectedBoxMsg;
   visualization_msgs::Marker boxBase;
   boxBase.header.frame_id = base_frame_id_;
-  boxBase.color.r = 1.0;
-  boxBase.color.g = 0.0;
+  boxBase.color.r = 0.0;
+  boxBase.color.g = 1.0;
   boxBase.color.b = 0.0;
   boxBase.color.a = 0.4;
   boxBase.header.stamp = stamp_;

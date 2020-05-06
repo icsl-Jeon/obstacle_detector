@@ -79,11 +79,35 @@ namespace obstacle_detector
         }
 
         void correctState(const RectangleObstacle & new_obstacle) {
+
+
+            double th_pred = kf_th_.q_pred(0);
+            double th_allow = M_PI/3;
+
             kf_x_.y(0) = new_obstacle.center.x;
             kf_y_.y(0) = new_obstacle.center.y;
-            kf_th_.y(0) = new_obstacle.theta;
-            kf_l1_.y(0) = new_obstacle.l1;
-            kf_l2_.y(0) = new_obstacle.l2;
+
+            double th_obsrv_raw = new_obstacle.theta;
+
+            // In the current implmentation, the theta is limited to [0,pi/2]
+            // Thus, we should correct the angle jump for measurement update state
+            int n = -5;
+            for (; n <= 5 ; n++)
+                if (abs(th_pred - (th_obsrv_raw+n*M_PI/2)) < th_allow )
+                    break;
+            if (abs(th_pred - (th_obsrv_raw+n*M_PI/2)) >= th_allow)
+                ROS_WARN("[Tracker] couldn't find proper arranging for angle observation");
+
+
+            kf_th_.y(0) = th_obsrv_raw+n*M_PI/2;
+            if (n%2 == 0 ) {
+                kf_l1_.y(0) = new_obstacle.l1;
+                kf_l2_.y(0) = new_obstacle.l2;
+            }
+            else{
+                kf_l1_.y(0) = new_obstacle.l2;
+                kf_l2_.y(0) = new_obstacle.l1;
+            }
 
             kf_x_.correctState();
             kf_y_.correctState();
@@ -164,14 +188,14 @@ namespace obstacle_detector
             kf_x_.R(0, 0) = s_measurement_variance_;
             kf_y_.R(0, 0) = s_measurement_variance_;
             kf_th_.R(0, 0) = s_measurement_variance_;
-            kf_l1_.R(0, 0) = s_measurement_variance_;
-            kf_l2_.R(0, 0) = s_measurement_variance_;
+            kf_l1_.R(0, 0) = 2*s_measurement_variance_;
+            kf_l2_.R(0, 0) = 2*s_measurement_variance_;
 
             kf_x_.Q(0, 0) = s_process_variance_;
             kf_y_.Q(0, 0) = s_process_variance_;
             kf_th_.Q(0, 0) = s_process_variance_;
-            kf_l1_.Q(0, 0) = s_process_variance_;
-            kf_l2_.Q(0, 0) = s_process_variance_;
+            kf_l1_.Q(0, 0) = 1/2*s_process_variance_;
+            kf_l2_.Q(0, 0) = 1/2*s_process_variance_;
 
             kf_x_.Q(1, 1) = s_process_rate_variance_;
             kf_y_.Q(1, 1) = s_process_rate_variance_;

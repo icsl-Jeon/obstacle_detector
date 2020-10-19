@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(obstacle_detector)
-
+set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_FLAGS "-std=c++11 -fpermissive ${CMAKE_CXX_FLAGS} -Wfatal-errors\ ")
 
 find_package(catkin REQUIRED COMPONENTS roscpp roslaunch nodelet rviz std_msgs

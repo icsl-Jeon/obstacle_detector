@@ -65,6 +65,34 @@ void pixelTo3DPoint(const sensor_msgs::PointCloud2& pCloud, const int u, const i
     p.y = Y;
 }
 
+void pixelTo3DPoint(const sensor_msgs::PointCloud2& pCloud, const int u, const int v,geometry_msgs::Point& p)
+{
+    // get width and height of 2D point cloud data
+    int width = pCloud.width;
+    int height = pCloud.height;
+
+    // Convert from u (column / width), v (row/height) to position in array
+    // where X,Y,Z data starts
+    int arrayPosition = v*pCloud.row_step + u*pCloud.point_step;
+
+    // compute position in array where x,y,z data start
+    int arrayPosX = arrayPosition + pCloud.fields[0].offset; // X has an offset of 0
+    int arrayPosY = arrayPosition + pCloud.fields[1].offset; // Y has an offset of 4
+    int arrayPosZ = arrayPosition + pCloud.fields[2].offset; // Y has an offset of 4
+
+    float X = 0.0;
+    float Y = 0.0;
+    float Z = 0.0;
+
+    memcpy(&X, &pCloud.data[arrayPosX], sizeof(float));
+    memcpy(&Y, &pCloud.data[arrayPosY], sizeof(float));
+    memcpy(&Z, &pCloud.data[arrayPosZ], sizeof(float));
+
+// put data into the point p
+    p.x = X;
+    p.y = Y;
+    p.z = Z;
+}
 
 ObstacleExtractor::ObstacleExtractor(ros::NodeHandle& nh, ros::NodeHandle& nh_local) : nh_(nh), nh_local_(nh_local) {
   p_active_ = false;
@@ -127,6 +155,8 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
   nh_local_.param<double>("max_x_limit", p_max_x_limit_,  10.0);
   nh_local_.param<double>("min_y_limit", p_min_y_limit_, -10.0);
   nh_local_.param<double>("max_y_limit", p_max_y_limit_,  10.0);
+  nh_local_.param<double>("min_z_limit", p_min_z_limit_,  0.0);
+  nh_local_.param<double>("max_z_limit", p_max_z_limit_,  3.0);
 
   nh_local_.param<string>("frame_id", p_frame_id_, "map");
 
@@ -193,13 +223,46 @@ void ObstacleExtractor::scanCallback(const sensor_msgs::LaserScan::ConstPtr scan
 void ObstacleExtractor::pclCallback(const sensor_msgs::PointCloud2::ConstPtr pcl_msg) {
     base_frame_id_ = pcl_msg->header.frame_id;
     stamp_ = pcl_msg->header.stamp;
-
     for(int c = 0 ; c<pcl_msg->width ; c++)
         for(int r = 0 ; r<pcl_msg->height ; r++){
             // express the points in map frame
-            Point p;
+            geometry_msgs::Point p;
+//            cout << "inside converter " << endl;
             pixelTo3DPoint(*pcl_msg,c,r,p);
-            input_points_.push_back(Point(p.x,p.y));
+
+//            cout << "outside converter " << endl;
+            // first, let's consider only z (x,y, transform will be hanlded in later part)
+            if (p_transform_coordinates_){
+
+                try {
+                    geometry_msgs::PointStamped pLidar;
+                    pLidar.point.x = p.x;
+                    pLidar.point.y = p.y;
+                    pLidar.point.z = p.z;
+                    pLidar.header.frame_id =pcl_msg->header.frame_id;
+
+                    geometry_msgs::PointStamped pMap;
+                    pMap.header.frame_id = p_frame_id_;
+                    tf_listener_.transformPoint(p_frame_id_, pLidar, pMap);
+                    // z
+                    double z = pMap.point.z;
+                    double x = pMap.point.x;
+                    double y = pMap.point.y;
+
+                    if (z > p_min_z_limit_ and z < p_max_z_limit_
+                    and y > p_min_y_limit_ and y < p_max_y_limit_
+                    and x > p_min_x_limit_ and x < p_max_x_limit_ )  {
+                        input_points_.push_back(Point(p.x, p.y));
+                    }
+                } catch (tf::TransformException& ex) {
+                    ROS_INFO_STREAM(ex.what());
+                    return;
+                }
+
+
+
+            } else
+                input_points_.push_back(Point(p.x,p.y));
         }
 
     processPoints();
@@ -214,7 +277,7 @@ void ObstacleExtractor::processPoints() {
 
   groupPoints();  // Grouping points simultaneously detects segments
   //mergeSegments();
-  mergeRects(); //
+//  mergeRects(); //
 
 //  cout << "---------------" << endl;
 
@@ -257,7 +320,7 @@ void ObstacleExtractor::groupPoints() {
         point_set.is_visible = false;
 
       detectSegments(point_set);
-      detectLRect(point_set);
+//      detectLRect(point_set);
 
       // Begin new point set
       point_set.begin = point;
@@ -268,82 +331,82 @@ void ObstacleExtractor::groupPoints() {
   }
 
   detectSegments(point_set); // Check the last point set too
-  detectLRect(point_set);
+//  detectLRect(point_set);
 
 }
 
-void ObstacleExtractor::detectLRect(const PointSet& point_set) {
-
-    if (point_set.num_points < p_min_group_points_)
-        return;
-
-    uint nAngleStep = 10;
-    double angleSeg = M_PI/2/nAngleStep;
-
-    uint nAngleBest = 0;
-    double bestScore = 0;
-    Rectangle bestRect;
-
-    vector<double> C1(point_set.num_points),C2(point_set.num_points); // xy projected set
-
-    for(uint n = 0; n<nAngleStep; n++){
-        double theta = angleSeg*n;
-        uint pntIdx = 0;
-        double c1min = 1e+6,c1max = -1e+6,c2min = 1e+6,c2max = -1e+6;
-
-        // extract min and max for each axis
-        for (PointIterator point = point_set.begin; point != point_set.end; ++point){
-            if (pntIdx < point_set.num_points) {
-                getTransformedXY(*point, theta, C1[pntIdx], C2[pntIdx]);
-
-                if (c1min > C1[pntIdx])
-                    c1min = C1[pntIdx];
-                if (c1max < C1[pntIdx])
-                    c1max = C1[pntIdx];
-                if (c2min > C2[pntIdx])
-                    c2min = C2[pntIdx];
-                if (c2max < C2[pntIdx])
-                    c2max = C2[pntIdx];
-
-                pntIdx++;
-            }
-        }
-
-        // examine criteria
-        double score = 0 ;
-        double deps = 0.3;
-        for (uint m = 0 ; m < point_set.num_points ; m++){
-            double d1 = min(C1[m] - c1min, c1max - C1[m]);
-            double d2 = min(C2[m] - c2min, c2max - C2[m]);
-            score += 1/max(min(d1,d2),deps);
-        }
-//        cout << score << ", ";
-
-
-        if (score > bestScore){
-
-            double centerX = (c1min + c1max)/2;
-            double centerY = (c2min + c2max)/2;
-
-            bestRect.center.x = cos(theta) * centerX - sin(theta) * centerY;
-            bestRect.center.y = sin(theta) * centerX + cos(theta) * centerY;
-
-            bestRect.l1 = c1max - c1min;
-            bestRect.l2 = c2max - c2min;
-
-            bestRect.theta = theta;
-
-            bestScore = score;
-        }
-    }
-//    cout << "best: " << bestScore << " with theta "<<bestRect.theta<< endl;
-    if (max(bestRect.l1,bestRect.l2)<p_max_box_edge and bestRect.getArea() < p_max_box_area and
-            bestRect.getArea() > p_min_box_area and
-            max(bestRect.l1,bestRect.l2)/min(bestRect.l1,bestRect.l2) < p_max_box_wh_ratio )
-        rectangles_.push_back(bestRect);
-
-}
-
+//void ObstacleExtractor::detectLRect(const PointSet& point_set) {
+//
+//    if (point_set.num_points < p_min_group_points_)
+//        return;
+//
+//    uint nAngleStep = 10;
+//    double angleSeg = M_PI/2/nAngleStep;
+//
+//    uint nAngleBest = 0;
+//    double bestScore = 0;
+//    Rectangle bestRect;
+//
+//    vector<double> C1(point_set.num_points),C2(point_set.num_points); // xy projected set
+//
+//    for(uint n = 0; n<nAngleStep; n++){
+//        double theta = angleSeg*n;
+//        uint pntIdx = 0;
+//        double c1min = 1e+6,c1max = -1e+6,c2min = 1e+6,c2max = -1e+6;
+//
+//        // extract min and max for each axis
+//        for (PointIterator point = point_set.begin; point != point_set.end; ++point){
+//            if (pntIdx < point_set.num_points) {
+//                getTransformedXY(*point, theta, C1[pntIdx], C2[pntIdx]);
+//
+//                if (c1min > C1[pntIdx])
+//                    c1min = C1[pntIdx];
+//                if (c1max < C1[pntIdx])
+//                    c1max = C1[pntIdx];
+//                if (c2min > C2[pntIdx])
+//                    c2min = C2[pntIdx];
+//                if (c2max < C2[pntIdx])
+//                    c2max = C2[pntIdx];
+//
+//                pntIdx++;
+//            }
+//        }
+//
+//        // examine criteria
+//        double score = 0 ;
+//        double deps = 0.3;
+//        for (uint m = 0 ; m < point_set.num_points ; m++){
+//            double d1 = min(C1[m] - c1min, c1max - C1[m]);
+//            double d2 = min(C2[m] - c2min, c2max - C2[m]);
+//            score += 1/max(min(d1,d2),deps);
+//        }
+////        cout << score << ", ";
+//
+//
+//        if (score > bestScore){
+//
+//            double centerX = (c1min + c1max)/2;
+//            double centerY = (c2min + c2max)/2;
+//
+//            bestRect.center.x = cos(theta) * centerX - sin(theta) * centerY;
+//            bestRect.center.y = sin(theta) * centerX + cos(theta) * centerY;
+//
+//            bestRect.l1 = c1max - c1min;
+//            bestRect.l2 = c2max - c2min;
+//
+//            bestRect.theta = theta;
+//
+//            bestScore = score;
+//        }
+//    }
+////    cout << "best: " << bestScore << " with theta "<<bestRect.theta<< endl;
+//    if (max(bestRect.l1,bestRect.l2)<p_max_box_edge and bestRect.getArea() < p_max_box_area and
+//            bestRect.getArea() > p_min_box_area and
+//            max(bestRect.l1,bestRect.l2)/min(bestRect.l1,bestRect.l2) < p_max_box_wh_ratio )
+//        rectangles_.push_back(bestRect);
+//
+//}
+//
 
 
 void ObstacleExtractor::detectSegments(const PointSet& point_set) {
@@ -433,37 +496,37 @@ void ObstacleExtractor::mergeSegments() {
   }
 }
 
-void ObstacleExtractor::mergeRects() {
-    uint n = 0;
-//    for (auto i = rectangles_.begin() ; i != rectangles_.end() ; ++i,n++)
-//                printf("detected rect [%f,%f] (%d / %d) \n",
-//                        i->center.x,i->center.y,n,rectangles_.size());
-    if (rectangles_.size() > 1)
-      for (auto i = rectangles_.begin() ; i != rectangles_.end() ; ++i)
-        for(auto j = i ; j != rectangles_.end() ; ++j){
-            Rectangle mergedRect;
-
-            if (i!=j) {
-
-                double angleDiff = abs(i->theta - j->theta);
-                double minVertDist = i->distTo(*j);
-//                printf("dist btw [%f,%f] and [%f,%f] =  %f\n",
-//                        i->center.x,i->center.y,j->center.x,j->center.y,minVertDist);
-
-                if ((angleDiff < p_max_merge_theta_diff or (M_PI / 2 - angleDiff) < p_max_merge_theta_diff) and
-                    minVertDist < p_max_merge_rect_dist) {
-                    mergedRect = sum(*i, *j);
-                    auto temp_itr = rectangles_.insert(i, mergedRect);
-                    rectangles_.erase(i);
-                    rectangles_.erase(j);
-                    i = --temp_itr;
-                    break;
-                }
-            }
-        }
-
-}
-
+//void ObstacleExtractor::mergeRects() {
+//    uint n = 0;
+////    for (auto i = rectangles_.begin() ; i != rectangles_.end() ; ++i,n++)
+////                printf("detected rect [%f,%f] (%d / %d) \n",
+////                        i->center.x,i->center.y,n,rectangles_.size());
+//    if (rectangles_.size() > 1)
+//      for (auto i = rectangles_.begin() ; i != rectangles_.end() ; ++i)
+//        for(auto j = i ; j != rectangles_.end() ; ++j){
+//            Rectangle mergedRect;
+//
+//            if (i!=j) {
+//
+//                double angleDiff = abs(i->theta - j->theta);
+//                double minVertDist = i->distTo(*j);
+////                printf("dist btw [%f,%f] and [%f,%f] =  %f\n",
+////                        i->center.x,i->center.y,j->center.x,j->center.y,minVertDist);
+//
+//                if ((angleDiff < p_max_merge_theta_diff or (M_PI / 2 - angleDiff) < p_max_merge_theta_diff) and
+//                    minVertDist < p_max_merge_rect_dist) {
+//                    mergedRect = sum(*i, *j);
+//                    auto temp_itr = rectangles_.insert(i, mergedRect);
+//                    rectangles_.erase(i);
+//                    rectangles_.erase(j);
+//                    i = --temp_itr;
+//                    break;
+//                }
+//            }
+//        }
+//
+//}
+//
 
 bool ObstacleExtractor::compareSegments(const Segment& s1, const Segment& s2, Segment& merged_segment) {
   if (&s1 == &s2)

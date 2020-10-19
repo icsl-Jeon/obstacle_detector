@@ -50,6 +50,7 @@
 
 
 void pixelTo3DPoint(const sensor_msgs::PointCloud2& pCloud, const int u, const int v, obstacle_detector::Point &  p);
+void pixelTo3DPoint(const sensor_msgs::PointCloud2& pCloud, const int u, const int v,geometry_msgs::Point &  p);
 
 namespace obstacle_detector
 {
@@ -73,7 +74,7 @@ private:
 
   void detectSegments(const PointSet& point_set);
   void mergeSegments();
-  void mergeRects();
+//  void mergeRects();
 
   bool compareSegments(const Segment& s1, const Segment& s2, Segment& merged_segment);
 
@@ -81,7 +82,7 @@ private:
   bool checkSegmentsCollinearity(const Segment& segment, const Segment& s1, const Segment& s2);
 
   void detectCircles();
-  void detectLRect(const PointSet& point_set); // L shape fitting
+//  void detectLRect(const PointSet& point_set); // L shape fitting
 //  void detectCirclesJBS(PointSet pointSet);
 
   void mergeCircles();
@@ -134,8 +135,8 @@ private:
   double p_min_y_limit_;
   double p_max_y_limit_;
 
-  double p_min_z_limit; // when pcl is used
-  double p_max_z_limit; //
+  double p_min_z_limit_; // when pcl is used
+  double p_max_z_limit_; //
 
 
 

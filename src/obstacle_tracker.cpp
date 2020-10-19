@@ -170,7 +170,7 @@ void ObstacleTracker::obstaclesCallback(const obstacle_detector::Obstacles::Cons
       calculateCostMatrix(new_obstacles->rects, cost_matrix);
 
 
-  cout << cost_matrix << endl;
+//  cout << cost_matrix << endl;
 
   vector<int> row_min_indices;
   calculateRowMinIndices(cost_matrix, row_min_indices);
@@ -340,7 +340,7 @@ double ObstacleTracker::obstacleCostFunction(const RectangleObstacle &new_obstac
     double cost = 3*(pow(new_obstacle.center.x - old_obstacle.center.x,2) + pow(new_obstacle.center.y - old_obstacle.center.y,2)) +
                     pow(new_obstacle.theta - old_obstacle.theta,2)+
                     pow(new_obstacle.l1 - old_obstacle.l1,2) + pow(new_obstacle.l2 - old_obstacle.l2,2);
-    printf("Computed cost: %f\n",cost);
+//    printf("Computed cost: %f\n",cost);
     return cost;
 }
 

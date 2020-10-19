@@ -40,6 +40,32 @@
 using namespace std;
 using namespace obstacle_detector;
 
+void pixelTo3DPoint(const sensor_msgs::PointCloud2& pCloud, const int u, const int v, obstacle_detector::Point& p)
+{
+    // get width and height of 2D point cloud data
+    int width = pCloud.width;
+    int height = pCloud.height;
+
+    // Convert from u (column / width), v (row/height) to position in array
+    // where X,Y,Z data starts
+    int arrayPosition = v*pCloud.row_step + u*pCloud.point_step;
+
+    // compute position in array where x,y,z data start
+    int arrayPosX = arrayPosition + pCloud.fields[0].offset; // X has an offset of 0
+    int arrayPosY = arrayPosition + pCloud.fields[1].offset; // Y has an offset of 4
+
+    float X = 0.0;
+    float Y = 0.0;
+
+    memcpy(&X, &pCloud.data[arrayPosX], sizeof(float));
+    memcpy(&Y, &pCloud.data[arrayPosY], sizeof(float));
+
+    // put data into the point p
+    p.x = X;
+    p.y = Y;
+}
+
+
 ObstacleExtractor::ObstacleExtractor(ros::NodeHandle& nh, ros::NodeHandle& nh_local) : nh_(nh), nh_local_(nh_local) {
   p_active_ = false;
 
@@ -154,15 +180,31 @@ void ObstacleExtractor::scanCallback(const sensor_msgs::LaserScan::ConstPtr scan
   processPoints();
 }
 
-void ObstacleExtractor::pclCallback(const sensor_msgs::PointCloud::ConstPtr pcl_msg) {
-  base_frame_id_ = pcl_msg->header.frame_id;
-  stamp_ = pcl_msg->header.stamp;
+//void ObstacleExtractor::pclCallback(const sensor_msgs::PointCloud::ConstPtr pcl_msg) {
+//  base_frame_id_ = pcl_msg->header.frame_id;
+//  stamp_ = pcl_msg->header.stamp;
+//
+//  for (const geometry_msgs::Point32& point : pcl_msg->points)
+//    input_points_.push_back(Point(point.x, point.y));
+//
+//  processPoints();
+//}
 
-  for (const geometry_msgs::Point32& point : pcl_msg->points)
-    input_points_.push_back(Point(point.x, point.y));
+void ObstacleExtractor::pclCallback(const sensor_msgs::PointCloud2::ConstPtr pcl_msg) {
+    base_frame_id_ = pcl_msg->header.frame_id;
+    stamp_ = pcl_msg->header.stamp;
 
-  processPoints();
+    for(int c = 0 ; c<pcl_msg->width ; c++)
+        for(int r = 0 ; r<pcl_msg->height ; r++){
+            // express the points in map frame
+            Point p;
+            pixelTo3DPoint(*pcl_msg,c,r,p);
+            input_points_.push_back(Point(p.x,p.y));
+        }
+
+    processPoints();
 }
+
 
 void ObstacleExtractor::processPoints() {
   segments_.clear();

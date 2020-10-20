@@ -728,8 +728,10 @@ void ObstacleExtractor::publishObstacles() {
         circle.center.y = c.center.y;
         circle.velocity.x = 0.0;
         circle.velocity.y = 0.0;
-        circle.radius = c.radius;
-        circle.true_radius = c.radius - p_radius_enlargement_;
+        circle.true_radius= max(min(c.radius,p_max_circle_rad),p_min_circle_rad);
+
+//        circle.true_radius = c.radius - p_radius_enlargement_;
+        circle.radius = circle.true_radius + p_radius_enlargement_;
 
         obstacles_msg->circles.push_back(circle);
     }

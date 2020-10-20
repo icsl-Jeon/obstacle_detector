@@ -185,7 +185,7 @@ Visualization Manager:
       Margin color: 46; 52; 54
       Name: Obstacles
       Opacity: 0.20000000298023224
-      Segments color: 238; 238; 236
+      Segments color: 164; 0; 0
       Segments thickness: 0.10000000149011612
       Topic: /raw_obstacles
       Unreliable: true
@@ -195,15 +195,39 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
+        CustomizationCharacter_2_enu:
+          Value: true
+        CustomizationCharacter_2_ned:
+          Value: true
         LidarSensor1:
           Value: true
-        PhysXCar:
+        PX4:
           Value: true
-        PhysXCar/odom_local_ned:
+        PX4/odom_local_ned:
+          Value: true
+        base_link:
+          Value: true
+        base_link_frd:
+          Value: true
+        front_left_custom_body:
+          Value: true
+        front_left_custom_body/static:
+          Value: true
+        front_left_custom_optical:
+          Value: true
+        front_left_custom_optical/static:
           Value: true
         map:
           Value: true
-        world_ent:
+        map_enu:
+          Value: true
+        map_ned:
+          Value: true
+        odom:
+          Value: true
+        odom_ned:
+          Value: true
+        scan_frame:
           Value: true
         world_enu:
           Value: true
@@ -215,11 +239,28 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          world_ent:
-            PhysXCar:
-              PhysXCar/odom_local_ned:
+        map_enu:
+          world_ned:
+            PX4:
+              CustomizationCharacter_2_ned:
+                CustomizationCharacter_2_enu:
+                  {}
+              PX4/odom_local_ned:
                 LidarSensor1:
+                  {}
+                front_left_custom_body/static:
+                  {}
+                front_left_custom_optical/static:
+                  {}
+              front_left_custom_body:
+                {}
+              front_left_custom_optical:
+                {}
+            world_enu:
+              map:
+                map_ned:
+                  {}
+                scan_frame:
                   {}
       Update Interval: 0
       Value: true
@@ -228,7 +269,7 @@ Visualization Manager:
       Marker Topic: /tracked_rects
       Name: MarkerArray
       Namespaces:
-        LRects: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -241,7 +282,7 @@ Visualization Manager:
       Value: true
   Enabled: true
   Global Options:
-    Background Color: 0; 0; 0
+    Background Color: 238; 238; 236
     Default Light: true
     Fixed Frame: map
     Frame Rate: 30
@@ -276,11 +317,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 25.535186767578125
+      Scale: 78.36005401611328
       Target Frame: LidarSensor1
       Value: TopDownOrtho (rviz)
-      X: -0.000246308627538383
-      Y: -0.027982771396636963
+      X: -25.90728759765625
+      Y: 0.07346265763044357
     Saved: ~
 Window Geometry:
   Displays:

@@ -149,7 +149,12 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
   nh_local_.param<double>("max_merge_separation", p_max_merge_separation_, 0.2);
   nh_local_.param<double>("max_merge_spread", p_max_merge_spread_, 0.2);
   nh_local_.param<double>("max_circle_radius", p_max_circle_radius_, 0.6);
-  nh_local_.param<double>("radius_enlargement", p_radius_enlargement_, 0.25);
+
+    nh_local_.param<double>("min_clamping_circle_rad", p_min_circle_rad, 0.6);
+    nh_local_.param<double>("max_clamping_circle_rad", p_max_circle_rad, 0.6);
+
+
+    nh_local_.param<double>("radius_enlargement", p_radius_enlargement_, 0.25);
 
   nh_local_.param<double>("min_x_limit", p_min_x_limit_, -10.0);
   nh_local_.param<double>("max_x_limit", p_max_x_limit_,  10.0);
@@ -584,7 +589,11 @@ void ObstacleExtractor::detectCircles() {
     circle.radius += p_radius_enlargement_;
 
     if (circle.radius < p_max_circle_radius_) {
-      circles_.push_back(circle);
+
+        // circle radius force clamping
+        circle.radius = max(min(circle.radius,p_max_circle_rad),p_min_circle_rad);
+
+        circles_.push_back(circle);
 
       if (p_discard_converted_segments_) {
         segment = segments_.erase(segment);

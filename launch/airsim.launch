@@ -33,8 +33,6 @@
     <param name="max_y_limit"   value="40"/>
 
 
-
-
     <param name="frame_id"             value="scan_frame"/>
   </node>
 

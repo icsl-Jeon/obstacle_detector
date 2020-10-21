@@ -164,6 +164,7 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
   nh_local_.param<double>("max_z_limit", p_max_z_limit_,  3.0);
 
   nh_local_.param<string>("frame_id", p_frame_id_, "map");
+    nh_local_.param<string>("baselink_id", p_base_link_id, "/base_link_fusion");
 
   nh_local_.param<double>("max_box_edge_length",p_max_box_edge,8.0);
   nh_local_.param<double>("max_box_area",p_max_box_area,30.0);
@@ -228,6 +229,8 @@ void ObstacleExtractor::scanCallback(const sensor_msgs::LaserScan::ConstPtr scan
 void ObstacleExtractor::pclCallback(const sensor_msgs::PointCloud2::ConstPtr pcl_msg) {
     base_frame_id_ = pcl_msg->header.frame_id;
     stamp_ = pcl_msg->header.stamp;
+//    cout << "===============" << endl;
+
     for(int c = 0 ; c<pcl_msg->width ; c++)
         for(int r = 0 ; r<pcl_msg->height ; r++){
             // express the points in map frame
@@ -236,7 +239,7 @@ void ObstacleExtractor::pclCallback(const sensor_msgs::PointCloud2::ConstPtr pcl
             pixelTo3DPoint(*pcl_msg,c,r,p);
 
 //            cout << "outside converter " << endl;
-            // first, let's consider only z (x,y, transform will be hanlded in later part)
+            // first, let's consider only z (x,y, transform will be hanlded in l/ater part)
             if (p_transform_coordinates_){
 
                 try {
@@ -248,16 +251,24 @@ void ObstacleExtractor::pclCallback(const sensor_msgs::PointCloud2::ConstPtr pcl
 
                     geometry_msgs::PointStamped pMap;
                     pMap.header.frame_id = p_frame_id_;
+
+                    geometry_msgs::PointStamped pBaselink;
+                    pBaselink.header.frame_id = p_base_link_id;
+
                     tf_listener_.transformPoint(p_frame_id_, pLidar, pMap);
-                    // z
-                    double z = pMap.point.z;
+                    tf_listener_.transformPoint(p_base_link_id, pLidar, pBaselink);
+
+
+                    // z = base link
+                    double z = pBaselink.point.z;
                     double x = pMap.point.x;
                     double y = pMap.point.y;
-
                     if (z > p_min_z_limit_ and z < p_max_z_limit_
                     and y > p_min_y_limit_ and y < p_max_y_limit_
                     and x > p_min_x_limit_ and x < p_max_x_limit_ )  {
-                        input_points_.push_back(Point(p.x, p.y));
+//                        printf("%f %f %f\n",x,y,z);
+
+                        input_points_.push_back(Point(x, y));
                     }
                 } catch (tf::TransformException& ex) {
                     ROS_INFO_STREAM(ex.what());
@@ -269,7 +280,7 @@ void ObstacleExtractor::pclCallback(const sensor_msgs::PointCloud2::ConstPtr pcl
             } else
                 input_points_.push_back(Point(p.x,p.y));
         }
-
+    cout << "number of points for obstacle extracting: "<< input_points_.size() << endl;
     processPoints();
 }
 
@@ -278,10 +289,11 @@ void ObstacleExtractor::processPoints() {
   segments_.clear();
   circles_.clear();
   circles_fit_.clear(); // JBS
-    rectangles_.clear(); // JBS
+  rectangles_.clear(); // JBS
 
   groupPoints();  // Grouping points simultaneously detects segments
-  //mergeSegments();
+  mergeSegments();
+//  cout << "n cluster: " <<segments_.size() << endl;
 //  mergeRects(); //
 
 //  cout << "---------------" << endl;
@@ -678,30 +690,28 @@ void ObstacleExtractor::publishObstacles() {
   detectedBoxMsg.markers.push_back(boxBase);
 
   if (p_transform_coordinates_) {
-    tf::StampedTransform transform;
-
-    try {
-      tf_listener_.waitForTransform(p_frame_id_, base_frame_id_, stamp_, ros::Duration(0.1));
-      tf_listener_.lookupTransform(p_frame_id_, base_frame_id_, stamp_, transform);
-    }
-    catch (tf::TransformException& ex) {
-      ROS_INFO_STREAM(ex.what());
-      return;
-    }
-
-    for (Segment& s : segments_) {
-      s.first_point = transformPoint(s.first_point, transform);
-      s.last_point = transformPoint(s.last_point, transform);
-    }
-
-    for (Circle& c : circles_)
-      c.center = transformPoint(c.center, transform);
+//    tf::StampedTransform transform;
+//
+//    try {
+//      tf_listener_.waitForTransform(p_frame_id_, base_frame_id_, stamp_, ros::Duration(0.1));
+//      tf_listener_.lookupTransform(p_frame_id_, base_frame_id_, stamp_, transform);
+//    }
+//    catch (tf::TransformException& ex) {
+//      ROS_INFO_STREAM(ex.what());
+//      return;
+//    }
+//
+//    for (Segment& s : segments_) {
+//      s.first_point = transformPoint(s.first_point, transform);
+//      s.last_point = transformPoint(s.last_point, transform);
+//    }
+//
+//    for (Circle& c : circles_)
+//      c.center = transformPoint(c.center, transform);
 
     obstacles_msg->header.frame_id = p_frame_id_;
 
-    for (Rectangle& r : rectangles_)
-        r = r.transform(transform);
-    boxBase.header.frame_id = p_frame_id_;
+
 
   }
   else

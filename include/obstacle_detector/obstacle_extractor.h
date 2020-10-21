@@ -96,6 +96,7 @@ private:
   ros::Subscriber scan_sub_;
   ros::Subscriber pcl_sub_;
   ros::Publisher obstacles_pub_;
+
   ros::ServiceServer params_srv_;
 
   ros::Publisher rect_pub_;
@@ -156,6 +157,7 @@ double p_max_circle_rad;
 
 
   std::string p_frame_id_;
+  std::string p_base_link_id; // we will do z thresholding w.r.t to this base link
 };
 
 } // namespace obstacle_detector

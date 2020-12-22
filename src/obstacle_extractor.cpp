@@ -183,6 +183,7 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
 
       obstacles_pub_ = nh_.advertise<obstacle_detector::Obstacles>("raw_obstacles", 10);
       rect_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("lshape_boxes",10);
+      pcl_window_pub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZ>>("window_pcl",1);
     }
     else {
       // Send empty message
@@ -231,6 +232,7 @@ void ObstacleExtractor::pclCallback(const sensor_msgs::PointCloud2::ConstPtr pcl
     stamp_ = pcl_msg->header.stamp;
 //    cout << "===============" << endl;
 
+    pcl_window.points.clear();
     for(int c = 0 ; c<pcl_msg->width ; c++)
         for(int r = 0 ; r<pcl_msg->height ; r++){
             // express the points in map frame
@@ -267,7 +269,11 @@ void ObstacleExtractor::pclCallback(const sensor_msgs::PointCloud2::ConstPtr pcl
                     and y > p_min_y_limit_ and y < p_max_y_limit_
                     and x > p_min_x_limit_ and x < p_max_x_limit_ )  {
 //                        printf("%f %f %f\n",x,y,z);
-
+                        pcl::PointXYZ pnt;
+                        pnt.x = x;
+                        pnt.y = y;
+                        pnt.z = pMap.point.z;
+                        pcl_window.points.push_back(pnt);
                         input_points_.push_back(Point(x, y));
                     }
                 } catch (tf::TransformException& ex) {
@@ -775,6 +781,7 @@ void ObstacleExtractor::publishObstacles() {
 
   obstacles_pub_.publish(obstacles_msg);
   rect_pub_.publish(detectedBoxMsg);
-
-
+  pcl_window.header.frame_id = p_frame_id_;
+  pcl_window.header.stamp =pcl_conversions::toPCL(ros::Time::now());
+    pcl_window_pub_.publish(pcl_window);
 }

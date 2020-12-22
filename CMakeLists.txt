@@ -5,7 +5,7 @@ set(CMAKE_CXX_FLAGS "-std=c++11 -fpermissive ${CMAKE_CXX_FLAGS} -Wfatal-errors\ 
 
 find_package(catkin REQUIRED COMPONENTS roscpp roslaunch nodelet rviz std_msgs
         std_srvs geometry_msgs sensor_msgs tf laser_geometry message_generation
-        visualization_msgs)
+        visualization_msgs pcl_ros)
 find_package(Armadillo REQUIRED)
 find_package(Boost 1.54.0 REQUIRED system)
 

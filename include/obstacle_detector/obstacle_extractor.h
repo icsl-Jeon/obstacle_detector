@@ -48,6 +48,10 @@
 #include "obstacle_detector/utilities/point_set.h"
 #include "obstacle_detector/utilities/rectangle.h"
 
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl_ros/publisher.h>
+#include <pcl_ros/point_cloud.h>
 
 void pixelTo3DPoint(const sensor_msgs::PointCloud2& pCloud, const int u, const int v, obstacle_detector::Point &  p);
 void pixelTo3DPoint(const sensor_msgs::PointCloud2& pCloud, const int u, const int v,geometry_msgs::Point &  p);
@@ -96,6 +100,7 @@ private:
   ros::Subscriber scan_sub_;
   ros::Subscriber pcl_sub_;
   ros::Publisher obstacles_pub_;
+  ros::Publisher pcl_window_pub_;
 
   ros::ServiceServer params_srv_;
 
@@ -110,7 +115,7 @@ private:
   std::list<Circle> circles_;
   std::list<Circle> circles_fit_;
     std::list<Rectangle> rectangles_;
-
+    pcl::PointCloud<pcl::PointXYZ> pcl_window;
   // Parameters
   bool p_active_;
   bool p_use_scan_;
